@@ -1,0 +1,10 @@
+<item>
+    <title>%%title%%</title>
+    <guid isPermaLink="true">%%href%%</guid>
+    <link>%%href%%</link>
+    <comments>%%href%%</comments>
+    <pubDate>Sun, 06 Jun 2010 17:29:23 +0100</pubDate>
+    <category>TV > XviD</category>
+    <description>desc</description>
+    <enclosure url="%%torrent%%" length="%%size%%" type="application/x-bittorrent"/>
+</item>
