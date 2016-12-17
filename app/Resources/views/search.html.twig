@@ -1,0 +1,9 @@
+{{ form_start(form) }}
+{{ form_widget(form) }}
+{{ form_end(form) }}
+
+<ul>
+{% for item in results %}
+    <li><a href="/download/{{ item.guid }}">{{ item.title }}</a></li>
+{% endfor %}
+</ul>

@@ -4,15 +4,19 @@ namespace AppBundle\Controller;
 
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+use Symfony\Component\Form\Extension\Core\Type\SubmitType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 class DefaultController extends Controller
 {
+    const T411TORZNAB_URL = 'http://localhost:9876/';
+
     /**
      * @Route("/api", defaults={"_format"="xml"})
      */
-    public function indexAction(Request $request)
+    public function apiAction(Request $request)
     {
         $rid    = $request->get('rid');
         $ep     = $request->get('ep');
@@ -50,6 +54,62 @@ class DefaultController extends Controller
         $response->headers->set('Content-Type', 'xml');
 
         return $response;
+    }
+
+    /**
+     * @Route("/", name="search")
+     */
+    public function searchAction(Request $request)
+    {
+        $form = $this->createFormBuilder()
+            ->add('search', TextType::class)
+            ->add('save', SubmitType::class, array('label' => 'Go go go!'))
+            ->getForm();
+
+        $form->handleRequest($request);
+
+        $results = [];
+
+        if ($form->isSubmitted()) {
+            $task = $form->getData();
+            $search = $task['search'];
+
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, self::T411TORZNAB_URL . 'api?t=search&q=' . \URLify::filter($search));
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+            $result = curl_exec($ch);
+            curl_close($ch);
+
+            $xml = new \SimpleXMLElement($result);
+            $firstNode = $xml->channel;
+            foreach ($firstNode->item as $item) {
+                $results[] = [
+                    'title' => $item->title,
+                    'guid'  => $item->guid,
+                ];
+            };
+        }
+
+        return $this->render('search.html.twig', array(
+            'form' => $form->createView(),
+            'results' => $results
+        ));
+    }
+
+    /**
+     * @Route("/download/{id}")
+     */
+    public function downloadAction(Request $request)
+    {
+        $id = $request->get('id');
+        $torrent = file_get_contents(self::T411TORZNAB_URL . 'torrent/' . $id);
+        $filename = '/tmp/' . $request->get('id') . '.torrent';
+        file_put_contents($filename, $torrent);
+
+        $cmd = "transmission-remote -n 'transmission:transmission' -a " . $filename;
+        shell_exec($cmd);
+
+        return $this->redirectToRoute('search');
     }
 
     /**
